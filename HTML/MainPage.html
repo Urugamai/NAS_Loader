@@ -1,0 +1,388 @@
+<html>
+	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>
+<!--
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-resource.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-route.min.js"></script>
+-->
+
+		<title>DiscLibrary</title>
+		<link rel="stylesheet" type="text/css" href="../css/WatsonHome.css">
+		<link rel="stylesheet" type="text/css" href="../css/DiscLibrary.css">
+<!--<?php
+// REMEMBER: This is running on the server
+
+	session_start();
+
+	include_once 'Settings.html';
+	include_once 'Common.html';
+	include_once 'DiscDBTools.html';
+	include_once 'StakkaTools.html';
+?>-->
+
+		<script src="http://code.jquery.com/jquery-2.1.1.js"></script>
+		<script src="utilities.js"></script>
+	</head>
+
+	<body ng-app="NASLoader" class="ng-scope">
+	<script>
+			var app = angular.module('NASLoader', []);
+
+			var ctrl = app.controller('Reactions', [ '$scope', '$interval',
+				function($scope, $interval) {
+					$scope.format = 'd/M/yy h:mm:ss a';
+					$scope.statusLine = 'Initialising...';
+					var statusUpdate; // The promise
+
+					// Define functions...
+					$scope.setStatusLine = function() {
+						$scope.statusLine = 'We have started...';
+					};
+
+					$scope.updateStatusLine = function() {
+						if (angular.isDefined(statusUpdate) ) return;	// dont double start timer
+
+						statusUpdate = $interval( $scope.setStatusLine , 1000);
+					};
+
+					$scope.stopStatusLine = function() {
+						if (angular.isDefined(statusUpdate) ) {
+							$interval.cancel(statusUpdate);
+							statusUpdate = undefined;
+						}
+					};
+
+			        $scope.$on('$destroy', function() {
+    			      		// Make sure that the interval is destroyed too
+    			      		$scope.stopStatusLine();
+        				}
+        			);
+
+        			$scope.updateStatusLine();
+				}
+			]);
+
+			/* - running clock - from examples, we are not using this...
+			ctrl.directive('myCurrentTime', ['$interval', 'dateFilter',
+			  	function($interval, dateFilter) {
+					// return the directive link function. (compile function not needed)
+					return function(scope, element, attrs) {
+				  		var format,  // date format
+					 	stopStatus; // so that we can cancel the status updates
+
+				  		// used to update the UI
+				  		function updateTime() {
+							element.text(dateFilter(new Date(), format));
+				  		}
+
+				  		// watch the expression, and update the UI on change.
+				  		scope.$watch(attrs.myCurrentTime, function(value) {
+							format = value;
+							updateTime();
+				  		});
+
+				  		stopTime = $interval(updateTime, 1000);
+
+				  		// listen on DOM destroy (removal) event, and cancel the next UI update
+				  		// to prevent updating time after the DOM element was removed.
+				  		element.on('$destroy', function() {
+							$interval.cancel(stopTime);
+				  		});
+					}
+				}
+			]);
+			*/
+	</script>
+
+	<div ng-controller="Reactions" class="ng-scope">
+		<input type="hidden" ng-model="statusLine">
+
+		<h1>WatsonHome Disc Library and Backup Utility</h1>
+
+		<label>Date format: <input ng-model="format" class="ng-valid ng-not-empty ng-touched ng-dirty ng-valid-parse"></label>
+		Current time is: <span my-current-time="format"></span>
+		<div style="background-color:yellow;width=100%;">Current status is {{statusLine}}</div>
+
+		<button type="button" data-ng-click="updateStatusLine()">StartStatus</button>
+	</div>
+
+		<!--<div style="background-color:yellow;width=100%;" id="divStatus" title="Status for current command appear here">Initialising, please wait...</div>-->
+
+		<input type="hidden" style="" id="idSessionID" value="tbd">
+		<input type="hidden" style="" id="idStatusCode" value="Dunno">
+
+		<div id="Container" style="width:100%;">
+
+<!-- ************************** LEFT Column (1) ******************************** -->
+
+			<div id="LeftColumn" style="width:40%;float:left;padding-right:1%">
+
+				<h2>SOURCE DETAILS</h2>
+
+				<hr>
+				<table align="top">
+					<tr>
+						<td>
+							<select style="width:125px" size=1 name="SourceMethod" id="idSourceMethod">
+								<?php
+									//!     Deliver the list of File Methods we want to be able to use to move files around
+									foreach ( $FileMethods as $FM ) {
+										echo("<option");
+										if ($FM === "Device") echo(" selected");
+										echo(">" . $FM . "</option>\n");
+									}
+								?>
+							</select>
+							<button style="background-color:lightgrey;width=10%;" type="button" onmouseup="triggerSourceScan()">Rescan source</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<select style="width:125px" size=1 name="SourceFormat" id="idSourceFormat">
+								<option selected>Select Method First</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<input style="width:100%;" type="text" name="SourcePath" id="idSourcePath" title="Path to your data source">
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<select style="width:100%;" size=1 name="SourceFileList" id="idSourceFileList" title="List of names at source">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td >
+							<strong style="">Disc Label:</strong>
+							<input	size=32 maxlength=32 type="text" name="SourceTitle" id="idSourceTitle"
+									title="Detected name from source - Includes triggering DB search">
+							<strong style=""> Year:</strong>
+							<input	size=4 type="number" name="SourceYear" id="idSourceYear" value=0
+									title="Enter year to refine the movie DB search">
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<strong style="">MD5: </strong><div style="display:inline" id="idDiscMD5" title="Checksum to identify source">ToBeCalculated</div>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							Size=<div style="display:inline" id="idDiscSize">0</div> Bytes,
+							Tracks=<div style="display:inline" id="idDiscTracks">0</div>,
+							Audio tracks=<div style="display:inline" id="idAudioTracks">0</div>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<strong style="">Internet DB Hits:</strong>
+							<select style="" size=1 name="InternetDBList" id="idInternetDBList" title="List of hits from IMDB or CDDB as appropriate">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							IMDBKey=<div style="display:inline" id="idIMDBKey">TBD</div>
+							Category=<div style="display:inline" id="idCategory">TBD</div>,
+							Genre=<div style="display:inline" id="idGenre">TBD</div>,
+							Artist=<div style="display:inline" id="idArtist">TBD</div>
+						</td>
+					</tr>
+					<tr><td>&nbsp;<hr></td></tr>
+					<tr>
+						<td>
+							<strong style="">Local DB Hits:</strong>
+							<select style="" size=1 name="LocalDBList" id="idLocalDBList" title="List of hits from our local DB">
+							</select>
+							<button style="background-color:red;" type="button" id="buttonDeleteEntry" disabled>Delete this Entry</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+
+<!-- ************************** Middle Column (2) ******************************** -->
+
+			<div id="MiddleColumn" style="width:150px;float:left;padding-right:1%">
+
+				<h2>Actions</h2>
+
+				<hr>
+				<table>
+					<tr>
+						<td>
+							<select style="width:100%;" size=1 name="SaveOperation" id="idSaveOperation" title="Save method to apply">
+								<?php
+									foreach ( $SaveOperations as $SO ) {
+										echo("<option");
+										if ($SO === "Copy") echo(" selected");
+										echo(">" . $SO . "</option>\n");
+									}
+								?>
+							</select>
+							----------------------->
+						</td>
+					</tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|</td></tr>
+					<tr><td>|&nbsp;<strong>Filename/Search:</strong></td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>|&nbsp;</td></tr>
+					<tr><td>v&nbsp;<hr></td></tr>
+					<tr><td>Storage:</td></tr>
+					<tr>
+						<td>
+							<select style="width:100%;" size=1 name="StorageOperation" id="idStorageOperation" title="Storage method to apply">
+								<?php
+									foreach ( $StorageOperations as $StO ) {
+										echo("<option");
+										if ($StO === "Skip") echo(" selected");
+										echo(">" . $StO . "</option>\n");
+									}
+								?>
+							</select>
+							----------------------->
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<button style="background-color:lightgreen" type="button" id="idRunActions">Run<br>Actions</button>
+							<button style="background-color:red" type="button" id="buttonReset">Reset<br>Form</button>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+<!-- ************************** RIGHT Column (3) ******************************** -->
+
+			<div id="RightColumn" style="width:45%;float:left;padding-right:1%">
+
+				<h2>TARGET DETAILS</h2>
+
+				<hr>
+				<table>
+					<tr>
+						<td>
+							<select style="width:150px;" size=1 name="TargetMethod" id="idTargetMethod" title="How do we want to save the data">
+								<?php
+									//!     Deliver the list of File Methods we want to be able to use to move files around
+									foreach ( $FileMethods as $FM ) {
+										echo("<option");
+										if ($FM === "FileSystem") echo(" selected");
+										echo(">" . $FM . "</option>\n");
+									}
+								?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<select style="width:150px;" size=1 name="TargetFormat" id="idTargetFormat" title="Format to save the data in">
+								<option selected>Select Method First</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<input style="width:100%;" type="text" name="TargetPath" id="idTargetPath" title="Where to save the data">
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<input type="hidden" style="" id="idTargetFolderSave" value="."/>
+							<select style="width:100%;" size=1 name="TargetFolder" id="idTargetFolder" title="List of Folders at Target - Data Type">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<input type="hidden" style="" id="idTargetSubFolderSave" value=".">
+							<select style="width:100%;" size=1 name="TargetSubFolder" id="idTargetSubFolder" title="List of folders under TargetFolder - Classification">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<input style="width:100%;" type="text" name="TargetTitle" id="idTargetTitle" title="Name to save the data as">
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<textarea	style="resize:none;width:100%;font-family:monospace" rows="7" id="idDiscComment" onKeyUp="limitText( 'idDiscComment', 'CommentChrCounter', 512);"
+										title="Any other comments to associate with this data in the Database entry"></textarea>
+							<br>
+							<input readonly type="text" id="CommentChrCounter" size="3" value="512"> characters left for comments
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div style="display:inline" id="idSaveLocation" title="The pathname to use to save the data">Calculated save location will appear here.</div>
+						</td>
+					</tr>
+					<tr>
+						<td style="">
+							<button style="width:100%;background-color:lightgreen;" type="button" onclick="window.open('Occupancy.php','_Occupancy');">Occupancy Chart...</button>
+						</td>
+					</tr>
+					<tr>
+						<td style="">
+							<select style="width:20%;" size=1 name="StakkaSerial" id="idStakkaSerial" title="Storage unit to use">
+								<?php
+									//!     Deliver the list of stakka serial numbers
+									echo '<option value="00000000" selected>NotForStakka</option>\n';
+									foreach ( $SerialList as $Serial ) {
+										echo("<option");
+										echo(' value="' . $Serial . '"' );
+										echo('>');
+										$SerialName = lookupSerialToName( $Serial );
+										echo $SerialName;
+										echo ("</option>\n");
+									}
+								?>
+							</select>
+							<input style="width:20%;" type="text" name="StakkaSlot" id="idStakkaSlot" value="0" title="Slot to use">
+							<input style="width:20%;" type="text" name="NewStakkaName" id="idNewStakkaName" value="" title="Current or New Storage Unit name">
+							<input style="width:20%;" type="text" disabled id="idStakkaSlotOccupied" value="Undefined" title="Slot occupancy status">
+							<button style="width:15%;background-color:lightgreen;" type="button" id="buttonInsertDisc" title="Inserts a disc, no DB update">Insert Disc</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<button style="width:20%;background-color:lightgreen;" type="button" id="buttonSelectAFreeSlot" title="Now, where did I leave that empty slot???">Find Free Slot</button>
+							<button style="width:20%;background-color:brown;" type="button" id="buttonEjectFromStakka" title="Dont want no stinking disc in this slot...">Eject Slot</button>
+							<button style="width:20%;background-color:orange;" type="button" id="buttonUpdateStakkaName" title="For those that cannot cope with remembering the serial numbers">Rename</button>
+							<button style="width:20%;background-color:lightgreen;" type="button" id="buttonCheckSlotState" title="OOOoooh, what's in THIS slot...?">Check Slot</button>
+							<button style="width:15%;background-color:yellow;" type="button" id="buttonResetStakka" title="Something went wrong sir.  Have you tried turning it off and on again?">Reset Unit</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div style="width:20%;display:inline;" id="idStakkaSerialNumber">00000000</div>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div style="background-color:yellow" id="divDebug" title="Debug Message"></div>
+							<div id="divLog" title="Log of debug messages"></div>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+<!--		<script src="Reactions.js"></script>-->
+
+	</body>
+</html>

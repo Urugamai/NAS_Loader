@@ -1,0 +1,45 @@
+* {
+	font-family:"Arial";
+}
+
+body {
+	background-color:LightBlue;
+}
+
+h1 {
+	color:Green;
+	text-align:Left;
+}
+
+p {
+	font-family:"Times New Roman";
+	font-size:20px;
+}
+
+input:enabled {
+	background:Khaki;
+}
+input:disabled {
+	background:#dddddd;
+}
+input:focus {
+	background:HoneyDew;
+}
+
+select:enabled {
+	background:Khaki;
+}
+select:disabled {
+	background:#dddddd;
+}
+
+textarea:enabled {
+	background:Khaki;
+}
+textarea:disabled {
+	background:#dddddd;
+}
+textarea:focus {
+	background:HoneyDew;
+}
+
