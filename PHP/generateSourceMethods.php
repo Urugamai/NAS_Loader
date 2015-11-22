@@ -9,4 +9,7 @@
 
     //!     Deliver the list of File Methods we want to be able to use to move files around
     echo json_encode( $FileMethods );
+
+//    echo '{"Name":"Device", "Selected":"selected"}';
+
 ?>
