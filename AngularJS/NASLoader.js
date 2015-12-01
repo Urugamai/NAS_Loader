@@ -1,14 +1,16 @@
 var app = angular.module('NASLoader', []);
 
-var reactions = app.controller('Reactions', [ '$scope', '$interval',
-    function($scope, $interval) {
-        $scope.format = 'd/M/yy h:mm:ss a';
+var reactions = app.controller('Reactions', [ '$scope', '$interval', '$http', '$filter',
+    function($scope, $interval, $http, $filter) {
+        $scope.format = 'd-MMM-yyyy HH:mm:ss';
         $scope.statusLine = 'Initialising...';
+        $scope.srcMethods = [];
+
         var statusUpdate; // The promise
 
         // Define functions for STATUS management
         $scope.setStatusLine = function() {
-            $scope.statusLine = 'We have started...';       // Call the server php function in future... (use $http?)
+            $scope.statusLine = $filter('date')(new Date(), $scope.format) + ': Awaiting your command...';       // Call the server php function in future... (use $http?)
         };
 
         $scope.updateStatusLine = function() {
@@ -24,6 +26,29 @@ var reactions = app.controller('Reactions', [ '$scope', '$interval',
             }
         };
 
+        // Define functions for Source Methodology
+
+        $scope.generateSourceMethods = function() {
+            $scope.srcMethods = '';
+            var request = $http( {
+                method: 'get'
+                , url: 'http://localhost:63342/NAS_Loader/PHP/generateSourceMethods.php'
+//                , data: { junk: 'nuthin' }
+                , headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                }
+            ).then(
+                function successCallback(response) {
+                    //angular.forEach(response.records, function(value,key){$scope.srcMethods.push(key, value);} );
+                    $scope.srcMethods = response;
+                    //$scope.srcMethods.push("Name","Worked");
+                },
+                function errorCallback(response) {
+					//$scope.srcMethods.push("Name","Error");
+					$scope.srcMethods = 'Error out';
+                }
+            );
+        };
+
         $scope.$on('$destroy', function() {
                 // Make sure that the interval is destroyed too
                 $scope.stopStatusLine();
@@ -32,24 +57,12 @@ var reactions = app.controller('Reactions', [ '$scope', '$interval',
 
         $scope.updateStatusLine();
 
-        // Define functions for Source Methodology
-
-        $scope.generateSourceMethods = function() {
-            $http.get(
-                "../PHP/generateSourceMethods.php"
-            ).success( function(response) {
-                    $scope.srcMethods = response.records;
-                }
-            );
-        };
-
         $scope.generateSourceMethods();
 
         // next...
 
     }
 ]);
-
 
 /* - running clock - from examples, we are not using this...
 reactions.directive('myCurrentTime', ['$interval', 'dateFilter',

@@ -1,24 +1,24 @@
 <html>
 	<head>
-		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>
-<!--
-		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-resource.min.js"></script>
-		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-route.min.js"></script>
--->
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.js"></script>
+		<!--<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>-->
+		<!--<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-resource.min.js"></script>-->
+		<!--<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-route.min.js"></script>-->
 
 		<title>DiscLibrary</title>
-		<link rel="stylesheet" type="text/css" href="../css/WatsonHome.css">
+		<!--<link rel="stylesheet" type="text/css" href="../css/WatsonHome.css">-->
 		<link rel="stylesheet" type="text/css" href="../css/DiscLibrary.css">
-<!--<?php
-// REMEMBER: This is running on the server
 
-	session_start();
+		<!--<?php
+		// REMEMBER: This is running on the server
 
-	include_once 'Settings.html';
-	include_once 'Common.php';
-	include_once 'DiscDBTools.html';
-	include_once 'StakkaTools.html';
-?>-->
+			session_start();
+
+			include_once 'Settings.php';
+			include_once 'Common.php';
+			include_once 'DiscDBTools.php';
+			include_once 'StakkaTools.php';
+		?>-->
 
 <!--
 		<script src="http://code.jquery.com/jquery-2.1.1.js"></script>
@@ -28,9 +28,10 @@
 
 	<body ng-app="NASLoader" class="ng-scope">
 	<script src="../AngularJS/NASLoader.js"></script>
+	<script src="../PHP/generateSourceMethods.php"></script>
 
 		<div ng-controller="Reactions" class="ng-scope">
-			<input type="hidden" ng-model="statusLine">
+			<!--<input type="hidden" ng-model="statusLine">-->
 
 			<h1>WatsonHome Disc Library and Backup Utility</h1>
 
@@ -38,12 +39,15 @@
 			<label>Date format: <input ng-model="format" class="ng-valid ng-not-empty ng-touched ng-dirty ng-valid-parse"></label>
 			Current time is: <span my-current-time="format"></span>
 -->
-			<div style="background-color:yellow;width=100%;">Current status is {{statusLine}}</div>
-
+			<div style="background-color:yellow;width=100%;">{{statusLine}}</div>
 			<select>
-				<option ng-repeat="option in srcMethods" value="{{option.Name}}">{{option.Name}} {{option.Selected}}</option>
+				<option value="NoChoice" selected>Select source method...</option>
+				<option ng-repeat="choice in srcMethods" value="{{choice.Name}}" {{choice.Selected}}>{{choice.Name}}</option>
+				<option value="all">{{srcMethods}}</option>
 			</select>
-		</div>	<!-- END OF ANGULARJS -->
+			<button ng-click="generateSourceMethods()">Generate Source Methods!</button>
+		</div>
+		<!-- END OF ANGULARJS -->
 
 		<input type="hidden" style="" id="idSessionID" value="tbd">
 		<input type="hidden" style="" id="idStatusCode" value="Dunno">
@@ -60,6 +64,7 @@
 				<table align="top">
 					<tr>
 						<td>
+<!--
 							<select style="width:125px" size=1 name="SourceMethod" id="idSourceMethod">
 								<?php
 									//!     Deliver the list of File Methods we want to be able to use to move files around
@@ -70,6 +75,7 @@
 									}
 								?>
 							</select>
+-->
 							<button style="background-color:lightgrey;width=10%;" type="button" onmouseup="triggerSourceScan()">Rescan source</button>
 						</td>
 					</tr>
@@ -320,6 +326,6 @@
 			</div>
 
 <!--		<script src="Reactions.js"></script>-->
-
+		</div>
 	</body>
 </html>
